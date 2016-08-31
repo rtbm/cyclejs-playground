@@ -9,7 +9,11 @@ const main = sources => {
       .startWith(null)
       .flatMapLatest(() => Rx.Observable.timer(0, 1000)
         .map(i =>
-          h1([
+          h1({
+            style: {
+              background: 'red',
+            },
+          }, [
             span([
               `Second elapsed: ${i}`,
             ]),
