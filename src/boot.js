@@ -1,4 +1,5 @@
 const Rx = require('rx');
+const Cycle = require('@cycle/core');
 
 const main = sources => {
   const click$ = sources.DOM;
@@ -28,24 +29,9 @@ const consoleLogDriver = msg$ => {
   msg$.subscribe(msg => console.log(msg));
 };
 
-const run = (mainFn, drivers) => {
-  const proxySources = {};
-
-  Object.keys(drivers).forEach(key => {
-    proxySources[key] = new Rx.Subject();
-  });
-
-  const sinks = mainFn(proxySources);
-
-  Object.keys(drivers).forEach(key => {
-    const source = drivers[key](sinks[key]);
-    source.subscribe(x => proxySources[key].onNext(x));
-  });
-};
-
 const drivers = {
   DOM: DOMDriver,
-  //Log: consoleLogDriver,
+  Log: consoleLogDriver,
 };
 
-run(main, drivers);
+Cycle.run(main, drivers);
