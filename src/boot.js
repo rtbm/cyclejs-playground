@@ -8,7 +8,15 @@ const main = sources => {
       .startWith(null)
       .flatMapLatest(() =>
         Rx.Observable.timer(0, 1000)
-          .map(i => `Seconds elapsed ${i}`)
+          .map(i => ({
+            tagName: 'H1',
+            children: [{
+              tagName: 'SPAN',
+              children: [
+                `Second elapsed: ${i}`,
+              ],
+            }],
+          }))
       ),
     Log: Rx.Observable.timer(0, 2000).map(i => 2 * i),
   };
@@ -17,9 +25,26 @@ const main = sources => {
 };
 
 const DOMDriver = text$ => {
-  text$.subscribe(text => {
+  const createElement = obj => {
+    const el = document.createElement(obj.tagName);
+
+    obj.children
+      .filter(c => typeof c === 'object')
+      .map(createElement)
+      .forEach(c => el.appendChild(c));
+
+    obj.children
+      .filter(c => typeof c === 'string')
+      .forEach(c => el.innerHTML += c);
+
+    return el;
+  };
+
+  text$.subscribe(obj => {
     const container = document.querySelector('#app');
-    container.textContent = text;
+    container.innerHTML = '';
+    const el = createElement(obj);
+    container.appendChild(el);
   });
 
   return Rx.Observable.fromEvent(document, 'click');
