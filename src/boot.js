@@ -1,23 +1,9 @@
 const Rx = require('rx');
 const Cycle = require('@cycle/core');
-
-const h = (tagName, children) => ({
-  tagName,
-  children,
-});
-
-const h1 = children => ({
-  tagName: 'h1',
-  children,
-});
-
-const span = children => ({
-  tagName: 'span',
-  children,
-});
+const { h1, span, makeDOMDriver } = require('@cycle/dom');
 
 const main = sources => {
-  const mouseover$ = sources.DOM.selectEvents('span', 'mouseover');
+  const mouseover$ = sources.DOM.select('span').events('mouseover');
   const sinks = {
     DOM: mouseover$
       .startWith(null)
@@ -36,43 +22,10 @@ const main = sources => {
   return sinks;
 };
 
-const DOMDriver = text$ => {
-  const createElement = obj => {
-    const el = document.createElement(obj.tagName);
-
-    obj.children
-      .filter(c => typeof c === 'object')
-      .map(createElement)
-      .forEach(c => el.appendChild(c));
-
-    obj.children
-      .filter(c => typeof c === 'string')
-      .forEach(c => el.innerHTML += c);
-
-    return el;
-  };
-
-  text$.subscribe(obj => {
-    const container = document.querySelector('#app');
-    container.innerHTML = '';
-    const el = createElement(obj);
-    container.appendChild(el);
-  });
-
-  const DOMSource = {
-    selectEvents: (tagName, eventType) => Rx.Observable.fromEvent(document, eventType)
-      .filter(ev => ev.target.tagName === tagName.toUpperCase()),
-  };
-
-  return DOMSource;
-};
-
-const consoleLogDriver = msg$ => {
-  msg$.subscribe(msg => console.log(msg));
-};
+const consoleLogDriver = msg$ => msg$.subscribe(msg => console.log(msg));
 
 const drivers = {
-  DOM: DOMDriver,
+  DOM: makeDOMDriver('#app'),
   Log: consoleLogDriver,
 };
 
