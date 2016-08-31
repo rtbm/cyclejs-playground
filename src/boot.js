@@ -2,9 +2,9 @@ const Rx = require('rx');
 const Cycle = require('@cycle/core');
 
 const main = sources => {
-  const click$ = sources.DOM;
+  const mouseover$ = sources.DOM.selectEvents('span', 'mouseover');
   const sinks = {
-    DOM: click$
+    DOM: mouseover$
       .startWith(null)
       .flatMapLatest(() =>
         Rx.Observable.timer(0, 1000)
@@ -47,7 +47,12 @@ const DOMDriver = text$ => {
     container.appendChild(el);
   });
 
-  return Rx.Observable.fromEvent(document, 'click');
+  const DOMSource = {
+    selectEvents: (tagName, eventType) => Rx.Observable.fromEvent(document, eventType)
+      .filter(ev => ev.target.tagName === tagName.toUpperCase()),
+  };
+
+  return DOMSource;
 };
 
 const consoleLogDriver = msg$ => {
