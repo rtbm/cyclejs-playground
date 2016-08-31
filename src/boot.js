@@ -6,17 +6,30 @@ const h = (tagName, children) => ({
   children,
 });
 
+const h1 = children => ({
+  tagName: 'h1',
+  children,
+});
+
+const span = children => ({
+  tagName: 'span',
+  children,
+});
+
 const main = sources => {
   const mouseover$ = sources.DOM.selectEvents('span', 'mouseover');
   const sinks = {
     DOM: mouseover$
       .startWith(null)
       .flatMapLatest(() => Rx.Observable.timer(0, 1000)
-        .map(i => h('H1', [
-          h('SPAN', [
-            `Second elapsed: ${i}`,
-          ]),
-        ]))),
+        .map(i =>
+          h1([
+            span([
+              `Second elapsed: ${i}`,
+            ]),
+          ])
+        )
+      ),
     Log: Rx.Observable.timer(0, 2000).map(i => 2 * i),
   };
 
