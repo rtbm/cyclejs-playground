@@ -1,23 +1,22 @@
 const Rx = require('rx');
 const Cycle = require('@cycle/core');
 
+const h = (tagName, children) => ({
+  tagName,
+  children,
+});
+
 const main = sources => {
   const mouseover$ = sources.DOM.selectEvents('span', 'mouseover');
   const sinks = {
     DOM: mouseover$
       .startWith(null)
-      .flatMapLatest(() =>
-        Rx.Observable.timer(0, 1000)
-          .map(i => ({
-            tagName: 'H1',
-            children: [{
-              tagName: 'SPAN',
-              children: [
-                `Second elapsed: ${i}`,
-              ],
-            }],
-          }))
-      ),
+      .flatMapLatest(() => Rx.Observable.timer(0, 1000)
+        .map(i => h('H1', [
+          h('SPAN', [
+            `Second elapsed: ${i}`,
+          ]),
+        ]))),
     Log: Rx.Observable.timer(0, 2000).map(i => 2 * i),
   };
 
