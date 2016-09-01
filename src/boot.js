@@ -1,43 +1,37 @@
 require('rx');
 
-const { run } =  require('@cycle/xstream-run');
-const { makeHTTPDriver } = require('@cycle/http');
-const { makeDOMDriver, button, h1, div, a } = require('@cycle/dom');
+const Cycle =  require('@cycle/core');
+const { makeDOMDriver, div, input, label } = require('@cycle/dom');
 
 const main = sources => {
-  const clickEvent$ = sources.DOM
-    .select('.get-first')
-    .events('click');
+  const heightChange$ = sources.DOM.select('.height').events('input').map(e => e.target.value);
+  const weightChange$ = sources.DOM.select('.weight').events('input').map(e => e.target.value);
 
-  const request$ = clickEvent$.map(() => ({
-    url: 'http://jsonplaceholder.typicode.com/users/1',
-    category: 'user',
-  }));
-
-  const response$ = sources.HTTP
-    .select('user')
-    .flatten();
-
-  const firstUser$ = response$.map(res => res.body)
-    .startWith(undefined);
+  const state$ = Rx.Observable.combineLatest(
+    heightChange$.startWith(80),
+    weightChange$.startWith(80),
+    (height, weight) => ({
+      height,
+      weight,
+      bmi: Math.round(weight / ((height * 0.01) * (height * 0.01)))
+    })
+  );
 
   return {
-    DOM: firstUser$.map(firstUser =>
+    DOM: state$.map(state =>
       div([
-        button('.get-first', 'Get first user'),
-        !firstUser ? undefined : div('.user-details', [
-          h1('.user-name', firstUser.name),
-          a('.user-website', { href: firstUser.website }, firstUser.website),
-        ]),
-      ])
+        div('.bmi', `BMI: ${state.bmi}`),
+        label(`Height: ${ state.height }`),
+        input('.height', { attrs: { type: 'range', min: 1, max: 350, value: state.height }}),
+        label(`Weight: ${ state.weight }`),
+        input('.weight', { attrs: { type: 'range', min: 1, max: 250, value: state.weight }}),
+      ]),
     ),
-    HTTP: request$,
   };
 };
 
 const drivers = {
   DOM: makeDOMDriver('#app'),
-  HTTP: makeHTTPDriver(),
 };
 
-run(main, drivers);
+Cycle.run(main, drivers);
