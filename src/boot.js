@@ -1,33 +1,43 @@
 require('rx');
 
-const Cycle = require('@cycle/core');
-const { button, p, label, div, makeDOMDriver } = require('@cycle/dom');
+const { run } =  require('@cycle/xstream-run');
+const { makeHTTPDriver } = require('@cycle/http');
+const { makeDOMDriver, button, h1, div, a } = require('@cycle/dom');
 
 const main = sources => {
-  const decrementClick$ = sources.DOM.select('.decrement').events('click');
-  const incrementClick$ = sources.DOM.select('.increment').events('click');
-  const decrementAction$ = decrementClick$.map(e => -1);
-  const incrementAction$ = incrementClick$.map(e => +1);
+  const clickEvent$ = sources.DOM
+    .select('.get-first')
+    .events('click');
 
-  const number$ = Rx.Observable.of(10)
-    .merge(decrementAction$).merge(incrementAction$)
-    .scan((prev, curr) => prev + curr);
+  const request$ = clickEvent$.map(() => ({
+    url: 'http://jsonplaceholder.typicode.com/users/1',
+    category: 'user',
+  }));
+
+  const response$ = sources.HTTP
+    .select('user')
+    .flatten();
+
+  const firstUser$ = response$.map(res => res.body)
+    .startWith(undefined);
 
   return {
-    DOM: number$.map(number =>
+    DOM: firstUser$.map(firstUser =>
       div([
-        button('.decrement', 'Decrement'),
-        button('.increment', 'Increment'),
-        p([
-          label(String(number)),
-        ])
+        button('.get-first', 'Get first user'),
+        !firstUser ? undefined : div('.user-details', [
+          h1('.user-name', firstUser.name),
+          a('.user-website', { href: firstUser.website }, firstUser.website),
+        ]),
       ])
-    )
+    ),
+    HTTP: request$,
   };
 };
 
 const drivers = {
   DOM: makeDOMDriver('#app'),
+  HTTP: makeHTTPDriver(),
 };
 
-Cycle.run(main, drivers);
+run(main, drivers);
